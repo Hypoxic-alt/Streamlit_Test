@@ -1,151 +1,73 @@
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
-
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
-
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
-
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
+def titration_pH_strong_acid_strong_base(V_titrant, V_initial, C_initial, C_titrant):
     """
-
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
+    Calculate the pH for a strong acid (e.g., HCl) titrated with a strong base (e.g., NaOH)
+    using a simple 1:1 neutralization reaction.
+    
+    Parameters:
+      V_titrant : numpy array
+          Array of titrant volumes (in liters)
+      V_initial : float
+          Initial acid volume (in liters)
+      C_initial : float
+          Acid concentration (M)
+      C_titrant : float
+          Titrant (base) concentration (M)
+          
+    Returns:
+      pH_vals : numpy array
+          Calculated pH values at each titrant volume.
+    """
+    moles_acid = C_initial * V_initial
+    pH_vals = []
+    
+    for Vb in V_titrant:
+        moles_base = C_titrant * Vb
+        V_total = V_initial + Vb
+        
+        if moles_base < moles_acid:
+            # Before equivalence: excess acid
+            H_conc = (moles_acid - moles_base) / V_total
+            pH = -np.log10(H_conc)
+        elif np.isclose(moles_base, moles_acid, rtol=1e-6):
+            # At equivalence: pH ~7 for strong acid-strong base titration
+            pH = 7.0
         else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
+            # After equivalence: excess base
+            OH_conc = (moles_base - moles_acid) / V_total
+            pOH = -np.log10(OH_conc)
+            pH = 14 - pOH
+        pH_vals.append(pH)
+    
+    return np.array(pH_vals)
 
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+def main():
+    st.title("Titration Curve: Strong Acid with Strong Base")
+    
+    # Set parameters for the titration:
+    # For example, 50 mL of 0.1 M acid titrated with 0.1 M base.
+    V_initial = 0.05       # Acid volume in liters (50 mL)
+    C_initial = 0.1        # Acid concentration in M
+    C_titrant = 0.1        # Base concentration in M
+    
+    # Generate an array of titrant volumes from 0 to 0.1 L (0 to 100 mL)
+    V_titrant = np.linspace(0, 0.1, 500)
+    pH_vals = titration_pH_strong_acid_strong_base(V_titrant, V_initial, C_initial, C_titrant)
+    
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(V_titrant * 1000, pH_vals, label="Titration Curve")
+    ax.axvline(x=V_initial * 1000, color='grey', linestyle='--', label="Equivalence Point")
+    ax.set_xlabel("Volume of Base added (mL)")
+    ax.set_ylabel("pH")
+    ax.set_title("Titration Curve: Strong Acid with Strong Base")
+    ax.legend()
+    ax.grid(True)
+    
+    st.pyplot(fig)
+
+if __name__ == "__main__":
+    main()
