@@ -78,10 +78,8 @@ def titration_pH(V_titrant, titration_type, p_value, V_initial=0.05, C_initial=0
     return pH
 
 def plot_titration(titration_type, p_value, V_initial, show_eq_line, show_eq_ph_line, show_half_eq_line, show_description):
-    # Generate titrant volumes (in liters)
     V_titrant = np.linspace(0, 0.1, 500)
     pH_vals = titration_pH(V_titrant, titration_type, p_value, V_initial, 0.1, 0.1)
-    # Equivalence volume equals the initial acid volume (in liters)
     V_eq = V_initial
     pH_at_eq = titration_pH(np.array([V_eq]), titration_type, p_value, V_initial, 0.1, 0.1)[0]
     V_half_eq = V_eq / 2
@@ -121,9 +119,9 @@ def plot_titration(titration_type, p_value, V_initial, show_eq_line, show_eq_ph_
     return fig
 
 # -------------------------------
-# HTML Descriptions (using bullet list) for Each Scenario
+# HTML Descriptions for Each Scenario
 
-descriptions = {
+descriptions_html = {
     'Weak Acid with Strong Base': """
 <ul>
   <li>The pH starts higher than expected for a strong acid because the weak acid is only partially dissociated.</li>
@@ -217,42 +215,51 @@ else:
     fig = plot_titration(scenario["type"], p_val, scenario["V_acid"], False, False, False, False)
 st.pyplot(fig)
 
-# Show the descriptive text with HTML bullet list if the answer has been submitted
+# Show the description (HTML bullet list) if the answer has been submitted
 if st.session_state.submitted:
-    st.markdown(descriptions[scenario["type"]], unsafe_allow_html=True)
+    st.markdown(descriptions_html[scenario["type"]], unsafe_allow_html=True)
+
+# If feedback is available (submitted), show it above the questions and below the description
+if st.session_state.submitted:
+    st.subheader("Feedback:")
+    st.text(st.session_state.feedback)
 
 st.header("Answer the following:")
 
+# Use a form to capture the quiz answers.
 with st.form(key="quiz_form"):
-    user_type = st.radio("Titration Type:", 
-                         options=["Weak Acid with Strong Base", "Weak Base with Strong Acid",
-                                  "Strong Acid with Strong Base", "Strong Base with Strong Acid"])
-    user_pH = st.radio("Equivalence pH:", options=["7", "less than 7", "greater than 7"])
-    user_buffer = st.radio("Buffer Region:", options=["Yes", "No"])
+    # Create two columns for the questions.
+    col1, col2 = st.columns(2)
     
-    # For pKₐ: if the scenario is weak acid/base, generate numeric options; otherwise, use "N/A".
-    if scenario["type"] in ["Weak Acid with Strong Base", "Weak Base with Strong Acid"]:
-        numeric_options = list(scenario["pKa_options"])
-        correct = scenario["pKa"]
-        if correct not in numeric_options:
-            numeric_options.append(correct)
-        others = [opt for opt in numeric_options if opt != correct]
-        if len(others) >= 2:
-            chosen = random.sample(others, 2)
+    with col1:
+        user_type = st.radio("Titration Type:", 
+                             options=["Weak Acid with Strong Base", "Weak Base with Strong Acid",
+                                      "Strong Acid with Strong Base", "Strong Base with Strong Acid"])
+        user_buffer = st.radio("Buffer Region:", options=["Yes", "No"])
+        # pKₐ as a radio button
+        if scenario["type"] in ["Weak Acid with Strong Base", "Weak Base with Strong Acid"]:
+            numeric_options = list(scenario["pKa_options"])
+            correct = scenario["pKa"]
+            if correct not in numeric_options:
+                numeric_options.append(correct)
+            others = [opt for opt in numeric_options if opt != correct]
+            if len(others) >= 2:
+                chosen = random.sample(others, 2)
+            else:
+                chosen = others
+            final_numeric = chosen + [correct]
+            final_numeric = [str(x) for x in final_numeric]
+            final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # Ensure uniqueness
         else:
-            chosen = others
-        final_numeric = chosen + [correct]
-        final_numeric = [str(x) for x in final_numeric]
-        final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # Unique options
-    else:
-        final_options = ["N/A", "4.0", "7.0", "10.0"]
-    user_pKa = st.selectbox("pKₐ:", options=final_options)
+            final_options = ["N/A", "4.0", "7.0", "10.0"]
+        user_pKa = st.radio("pKₐ:", options=final_options)
     
-    # Equivalence Volume (in mL) based on the acid volume (in liters)
-    correct_vol = int(scenario["V_acid"] * 1000)
-    candidates = sorted({x for x in [correct_vol - 10, correct_vol, correct_vol + 10, correct_vol + 20] if 30 <= x <= 60})
-    final_vol_options = [str(x) for x in candidates]
-    user_vol = st.selectbox("Equivalence Volume (mL):", options=final_vol_options)
+    with col2:
+        user_pH = st.radio("Equivalence pH:", options=["7", "less than 7", "greater than 7"])
+        correct_vol = int(scenario["V_acid"] * 1000)
+        candidates = sorted({x for x in [correct_vol - 10, correct_vol, correct_vol + 10, correct_vol + 20] if 30 <= x <= 60})
+        final_vol_options = [str(x) for x in candidates]
+        user_vol = st.radio("Equivalence Volume (mL):", options=final_vol_options)
     
     submitted = st.form_submit_button(label="Submit Answer")
 
@@ -299,10 +306,8 @@ if submitted:
     st.session_state.submitted = True
     st.rerun()
 
-# Display feedback if submitted
+# Display "Next Question" button if the answer is submitted
 if st.session_state.submitted:
-    st.subheader("Feedback:")
-    st.text(st.session_state.feedback)
     if st.button("Next Question"):
         st.session_state.scenario = generate_scenario()
         st.session_state.submitted = False
