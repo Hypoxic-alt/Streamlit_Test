@@ -121,33 +121,37 @@ def plot_titration(titration_type, p_value, V_initial, show_eq_line, show_eq_ph_
     return fig
 
 # -------------------------------
-# Quiz Data and Logic
+# HTML Descriptions (using bullet list) for Each Scenario
 
 descriptions = {
-    'Weak Acid with Strong Base': (
-        "Titration of Weak Acid with Strong Base:\n"
-        "• The pH starts higher than expected for a strong acid because the weak acid is only partially dissociated.\n"
-        "• A buffer region is present due to significant amounts of both the weak acid and its conjugate base.\n"
-        "• The pH at the equivalence point is greater than 7 because the conjugate base hydrolyzes to form OH⁻."
-    ),
-    'Weak Base with Strong Acid': (
-        "Titration of Weak Base with Strong Acid:\n"
-        "• The pH starts lower than expected for a strong base because the weak base is only partially ionized.\n"
-        "• A buffer region exists due to the presence of both the weak base and its conjugate acid.\n"
-        "• The pH at the equivalence point is less than 7 because the conjugate acid donates H⁺."
-    ),
-    'Strong Acid with Strong Base': (
-        "Titration of Strong Acid with Strong Base:\n"
-        "• The pH starts very low due to the complete ionization of the strong acid.\n"
-        "• No buffer region is observed as the reaction goes to completion.\n"
-        "• The equivalence point is neutral (around pH 7) due to complete neutralization."
-    ),
-    'Strong Base with Strong Acid': (
-        "Titration of Strong Base with Strong Acid:\n"
-        "• The pH starts very high due to the complete ionization of the strong base.\n"
-        "• No buffer region is observed because the reaction goes to completion.\n"
-        "• The equivalence point is neutral (around pH 7) due to complete neutralization."
-    )
+    'Weak Acid with Strong Base': """
+<ul>
+  <li>The pH starts higher than expected for a strong acid because the weak acid is only partially dissociated.</li>
+  <li>A buffer region is present due to significant amounts of both the weak acid and its conjugate base.</li>
+  <li>The pH at the equivalence point is greater than 7 because the conjugate base hydrolyzes to form OH⁻.</li>
+</ul>
+""",
+    'Weak Base with Strong Acid': """
+<ul>
+  <li>The pH starts lower than expected for a strong base because the weak base is only partially ionized.</li>
+  <li>A buffer region exists due to the presence of both the weak base and its conjugate acid.</li>
+  <li>The pH at the equivalence point is less than 7 because the conjugate acid donates H⁺.</li>
+</ul>
+""",
+    'Strong Acid with Strong Base': """
+<ul>
+  <li>The pH starts very low due to the complete ionization of the strong acid.</li>
+  <li>No buffer region is observed as the reaction goes to completion.</li>
+  <li>The equivalence point is neutral (around pH 7) due to complete neutralization.</li>
+</ul>
+""",
+    'Strong Base with Strong Acid': """
+<ul>
+  <li>The pH starts very high due to the complete ionization of the strong base.</li>
+  <li>No buffer region is observed because the reaction goes to completion.</li>
+  <li>The equivalence point is neutral (around pH 7) due to complete neutralization.</li>
+</ul>
+"""
 }
 
 def generate_scenario():
@@ -213,9 +217,9 @@ else:
     fig = plot_titration(scenario["type"], p_val, scenario["V_acid"], False, False, False, False)
 st.pyplot(fig)
 
-# Show the descriptive text if the answer has been submitted
+# Show the descriptive text with HTML bullet list if the answer has been submitted
 if st.session_state.submitted:
-    st.markdown(descriptions[scenario["type"]])
+    st.markdown(descriptions[scenario["type"]], unsafe_allow_html=True)
 
 st.header("Answer the following:")
 
@@ -226,7 +230,7 @@ with st.form(key="quiz_form"):
     user_pH = st.radio("Equivalence pH:", options=["7", "less than 7", "greater than 7"])
     user_buffer = st.radio("Buffer Region:", options=["Yes", "No"])
     
-    # pKₐ selection: for weak acid/base scenarios, generate numeric options; otherwise use "N/A"
+    # For pKₐ: if the scenario is weak acid/base, generate numeric options; otherwise, use "N/A".
     if scenario["type"] in ["Weak Acid with Strong Base", "Weak Base with Strong Acid"]:
         numeric_options = list(scenario["pKa_options"])
         correct = scenario["pKa"]
@@ -239,12 +243,12 @@ with st.form(key="quiz_form"):
             chosen = others
         final_numeric = chosen + [correct]
         final_numeric = [str(x) for x in final_numeric]
-        final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # ensure uniqueness
+        final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # Unique options
     else:
         final_options = ["N/A", "4.0", "7.0", "10.0"]
     user_pKa = st.selectbox("pKₐ:", options=final_options)
     
-    # Equivalence Volume (in mL)
+    # Equivalence Volume (in mL) based on the acid volume (in liters)
     correct_vol = int(scenario["V_acid"] * 1000)
     candidates = sorted({x for x in [correct_vol - 10, correct_vol, correct_vol + 10, correct_vol + 20] if 30 <= x <= 60})
     final_vol_options = [str(x) for x in candidates]
@@ -293,7 +297,7 @@ if submitted:
     
     st.session_state.feedback = feedback_text
     st.session_state.submitted = True
-    st.rerun()  # Rerun the app to update the display
+    st.rerun()
 
 # Display feedback if submitted
 if st.session_state.submitted:
