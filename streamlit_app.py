@@ -285,7 +285,7 @@ if submitted:
     
     st.session_state.feedback = feedback_text
     st.session_state.submitted = True
-    st.experimental_rerun()  # Rerun to update the display with feedback and updated plot
+    st.rerun()  # Rerun to update the display with feedback and updated plot
 
 # Display feedback if submitted
 if st.session_state.submitted:
@@ -295,4 +295,4 @@ if st.session_state.submitted:
         st.session_state.scenario = generate_scenario()
         st.session_state.submitted = False
         st.session_state.feedback = ""
-        st.experimental_rerun()
+        st.rerun()
