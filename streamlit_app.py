@@ -78,8 +78,10 @@ def titration_pH(V_titrant, titration_type, p_value, V_initial=0.05, C_initial=0
     return pH
 
 def plot_titration(titration_type, p_value, V_initial, show_eq_line, show_eq_ph_line, show_half_eq_line, show_description):
+    # Generate titrant volumes (in liters)
     V_titrant = np.linspace(0, 0.1, 500)
     pH_vals = titration_pH(V_titrant, titration_type, p_value, V_initial, 0.1, 0.1)
+    # Equivalence volume equals the initial acid volume (in liters)
     V_eq = V_initial
     pH_at_eq = titration_pH(np.array([V_eq]), titration_type, p_value, V_initial, 0.1, 0.1)[0]
     V_half_eq = V_eq / 2
@@ -164,6 +166,7 @@ def generate_scenario():
     else:
         possible_values = ["N/A"]
         correct_pKa = "N/A"
+    
     if scenario_type == "Weak Acid with Strong Base":
         eq_pH = "greater than 7"
         buffer_ans = "Yes"
@@ -173,7 +176,9 @@ def generate_scenario():
     else:
         eq_pH = "7"
         buffer_ans = "No"
+    
     V_acid = random.choice([0.03, 0.04, 0.05, 0.06])
+    
     return {
         "type": scenario_type,
         "pKa": correct_pKa,
@@ -198,7 +203,6 @@ if "feedback" not in st.session_state:
 
 st.title("Titration Quiz")
 
-# Get the current scenario
 scenario = st.session_state.scenario
 p_val = scenario["pKa"] if scenario["pKa"] != "N/A" else 0
 
@@ -209,7 +213,7 @@ else:
     fig = plot_titration(scenario["type"], p_val, scenario["V_acid"], False, False, False, False)
 st.pyplot(fig)
 
-# If the answer has been submitted, show the descriptive text.
+# Show the descriptive text if the answer has been submitted
 if st.session_state.submitted:
     st.markdown(descriptions[scenario["type"]])
 
@@ -222,7 +226,7 @@ with st.form(key="quiz_form"):
     user_pH = st.radio("Equivalence pH:", options=["7", "less than 7", "greater than 7"])
     user_buffer = st.radio("Buffer Region:", options=["Yes", "No"])
     
-    # For pKₐ: if scenario is weak acid/base, generate numeric options; otherwise, use "N/A".
+    # pKₐ selection: for weak acid/base scenarios, generate numeric options; otherwise use "N/A"
     if scenario["type"] in ["Weak Acid with Strong Base", "Weak Base with Strong Acid"]:
         numeric_options = list(scenario["pKa_options"])
         correct = scenario["pKa"]
@@ -235,12 +239,12 @@ with st.form(key="quiz_form"):
             chosen = others
         final_numeric = chosen + [correct]
         final_numeric = [str(x) for x in final_numeric]
-        final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # Unique options
+        final_options = list(dict.fromkeys(final_numeric + ["N/A"]))  # ensure uniqueness
     else:
         final_options = ["N/A", "4.0", "7.0", "10.0"]
     user_pKa = st.selectbox("pKₐ:", options=final_options)
     
-    # Equivalence Volume (in mL) based on the acid volume (in liters)
+    # Equivalence Volume (in mL)
     correct_vol = int(scenario["V_acid"] * 1000)
     candidates = sorted({x for x in [correct_vol - 10, correct_vol, correct_vol + 10, correct_vol + 20] if 30 <= x <= 60})
     final_vol_options = [str(x) for x in candidates]
@@ -257,14 +261,17 @@ if submitted:
         feedback_text += "Titration Type: Correct!\n"
     else:
         feedback_text += f"Titration Type: Incorrect. Correct answer: {scenario['type']}\n"
+    
     if user_pH == scenario["eq_pH"]:
         feedback_text += "Equivalence pH: Correct!\n"
     else:
         feedback_text += f"Equivalence pH: Incorrect. Correct answer: {scenario['eq_pH']}\n"
+    
     if user_buffer == scenario["buffer"]:
         feedback_text += "Buffer Region: Correct!\n"
     else:
         feedback_text += f"Buffer Region: Incorrect. Correct answer: {scenario['buffer']}\n"
+    
     if scenario["pKa"] != "N/A":
         try:
             if abs(float(user_pKa) - float(scenario["pKa"])) < 0.1:
@@ -278,6 +285,7 @@ if submitted:
             feedback_text += "pKₐ: Correct!\n"
         else:
             feedback_text += "pKₐ: Incorrect. Correct answer: N/A\n"
+    
     if user_vol == str(correct_vol):
         feedback_text += "Equivalence Volume: Correct!\n"
     else:
@@ -285,7 +293,7 @@ if submitted:
     
     st.session_state.feedback = feedback_text
     st.session_state.submitted = True
-    st.rerun()  # Rerun to update the display with feedback and updated plot
+    st.rerun()  # Rerun the app to update the display
 
 # Display feedback if submitted
 if st.session_state.submitted:
