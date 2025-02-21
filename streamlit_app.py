@@ -126,7 +126,7 @@ descriptions_html = {
 <ul>
   <li>The pH starts higher than expected for a strong acid because the weak acid is only partially dissociated.</li>
   <li>A buffer region is present due to significant amounts of both the weak acid and its conjugate base.</li>
-  <li>The pH at the equivalence point is greater than 7 because the conjugate base hydrolyzes to form OH⁻.</li>
+  <li>The pH at the equivalence point is greater than 7 because the conjugate base accepts H⁺.</li>
 </ul>
 """,
     'Weak Base with Strong Acid': """
